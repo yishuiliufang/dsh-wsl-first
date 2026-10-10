@@ -66,7 +66,7 @@ npm install dsh-wsl-tool
 
 本插件**没有声明任何 `@deepseek-ai/*` peer dependency**，也不 import 它们的值。这是一条刻意的设计：DSH 启动时会用 `evaluatePluginCompatibility` 逐个校验 profile bundle 的 peer 区间，只要有一个不覆盖当前运行时版本，**整个 bundle 会被跳过**，`cordis.patch.yml` 不生效，表现就是"插件装了但没反应"。本插件没有任何 peer 区间可校验，也就不会因为这种原因被跳过。
 
-升级 DSH 大版本后如果本插件突然没了动静，先看 stderr 有没有 `skipping profile bundle` 字样，再查 `engines.dsh` 是否还覆盖。
+>  升级 DSH 大版本后如果本插件突然没了动静，先看 stderr 有没有 `skipping profile bundle` 字样，再查 `engines.dsh` 是否还覆盖。
 
 ## 配置
 
@@ -108,7 +108,7 @@ npm install dsh-wsl-tool
 
 `wsl` 只是默认值，这插件本质是个通用的执行器路由器。
 
-### 两条配置规则
+### 配置规则
 
 同一个工具既当执行器又当"最后手段"是矛盾，会直接报错，不让某个静默的胜者决定。而 `preferred` 在 `alternatives` 里重复出现不算矛盾，那只是冗余（把 `preferred` 指到 `bash` 时会自然发生），直接去重。
 
@@ -133,7 +133,7 @@ npm install dsh-wsl-tool
 - `wsl` paths are Linux paths (`/mnt/c/...`). Windows paths in `command`/`workdir` are translated automatically; pass `translatePaths: false` to hand a native path to a Windows program.
 ```
 
-上面这份是从真实会话的系统提示词里读回来的。注意里面**没有** `bash` 那一行：在实测的那个 profile 里 `bash` 工具没注册，路由器就把它去掉了。
+>  上面这份是从真实会话的系统提示词里读回来的。注意里面**没有** `bash` 那一行：在实测的那个 profile 里 `bash` 工具没注册，路由器就把它去掉了。
 
 ## 项目结构
 
@@ -158,7 +158,7 @@ dsh-wsl-first
 npm test
 ```
 
-`lib/` 下两个模块都是纯函数，所以测试不需要 DSH 宿主。`mount.mjs` 用假的 cordis context 跑 `index.js` 里真实的 `apply`，断言注册出的段名、顺序和渲染文本。`docs.mjs` 重新渲染一次，逐字节比对两份 README 里引用的那段，所以文档里的输出不可能和代码实际产出脱节。
+>  `lib/` 下两个模块都是纯函数，所以测试不需要 DSH 宿主。`mount.mjs` 用假的 cordis context 跑 `index.js` 里真实的 `apply`，断言注册出的段名、顺序和渲染文本。`docs.mjs` 重新渲染一次，逐字节比对两份 README 里引用的那段，所以文档里的输出不可能和代码实际产出脱节。
 
 ## 许可证
 
