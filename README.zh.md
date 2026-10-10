@@ -22,8 +22,8 @@ DSH 在 Windows 上给模型的默认命令工具是 pwsh。这本身没什么�
 
 ## 特性
 
-| 🚀 省 token | 少一次语法换算，就少一次重试
-| 🐧 对准 WSL | 模型按 bash 来写，直接跑在 Linux 侧，真需要 Windows 原生功能时，pwsh 还在工具表里
+🚀 省 token  少一次语法换算，就少一次重试
+🐧 对准 WSL  模型按 bash 来写，直接跑在 Linux 侧，真需要 Windows 原生功能时，pwsh 还在工具表里
 
 ## 依赖
 
