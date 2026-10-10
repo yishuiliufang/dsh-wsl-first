@@ -2,86 +2,45 @@
 
 **English** | [中文](README.zh.md)
 
-Route DSH command execution to **WSL first**.
+Make DSH reach for WSL first on Windows.
 
-A [DeepSeek Harness](https://github.com/deepseek-ai) plugin that publishes one ordered system-prompt section naming the command executor the agent should reach for first. Installing it changes no capability — it changes what the agent *chooses*.
+🎯 Have WSL installed? Then use it — don't let the agent default to writing PowerShell.
 
-## Who this is for
+## Why
 
-**If you don't like using Git for Windows and would rather run everything through WSL, this plugin is for you.**
+On Windows, DSH hands the model `pwsh` as its default command tool. There's nothing wrong with that in itself, but if the machine already has WSL, that default costs you.
 
-On Windows, DSH ships a PowerShell executor and treats it as the default. If your real toolchain — compiler, package manager, shell scripts, CI parity — lives in WSL, that default fights you: every command pays a syntax translation tax, and paths have to be converted by hand.
+Models write bash more naturally than PowerShell. Their command instincts are POSIX-shaped. Forcing a switch to PowerShell means translating pipes, quoting, and paths back and forth — and every mistranslation is a retry. **Every retry is tokens burned for nothing.**
 
-This plugin makes WSL the first choice. PowerShell stays available for the genuine Windows-native task, but the agent stops reaching for it on its own.
+Output is the same story. Linux commands tend to print tight, plain text. PowerShell hands you tables and object properties by default, and the same information takes visibly more room.
 
-If that describes you, this is the whole point of the project.
+Paths too. The WSL tool converts `C:\...` to `/mnt/c/...` on its own, so the model never has to think about it.
 
-## The problem
+So this plugin does one small thing: it adds a section to the system prompt saying to try `wsl` first. **It grants no capability and disables no tool — it just changes the default order.**
 
-When several command tools are registered at once, which one the model calls first is not obvious. The bundled `pwsh` tool is always present; `wsl` arrives with a separate plugin. Nothing states a preference, so the model picks one — often `pwsh`, the tool it learned first.
+That prompt text only lists tools that are actually registered. If a tool isn't installed, it won't appear there, which means the model never gets told to call something that doesn't exist. A static instruction file can't do this; it just repeats what you wrote.
 
-That is a routing problem, not a capability problem. The fix is a preference, not a restriction.
+## Features
 
-## What this plugin does
-
-It registers a scoped `systemPrompt` section, ordered at **3260** — after the other tooling sections, so this plugin has the final say on routing while leaving every other section intact.
-
-The rendered section:
-
-```markdown
-# Shell routing: wsl first
-
-**For every command execution, call `wsl` as the first and default tool.**
-
-| Task | Tool |
+| | |
 | --- | --- |
-| Any command, build, git, pipeline, script, file listing, search | `wsl` |
-| POSIX commands where WSL is unavailable | `bash` (fallback) |
-| Windows-native only: registry, services, COM, cmdlets with no Linux equivalent | `pwsh` (last resort) |
-
-## Rules
-
-- `wsl` is the primary command executor. Reach for it first, every time.
-- Use `pwsh` **only** when the task genuinely requires functionality no other available tool provides — and say why in the same reply.
-- Never use `pwsh` merely because it appears first in a tool list, and never as a fallback when a `wsl` command fails: fix the command and retry there.
-- Do not mix shell syntaxes. A `wsl` call contains the syntax of the shell that tool runs; each executor has its own quoting and path rules.
-- `wsl` paths are Linux paths (`/mnt/c/...`). Windows paths in `command`/`workdir` are translated automatically; pass `translatePaths: false` to hand a native path to a Windows program.
-```
-
-## It advertises only what exists
-
-**A tool that is not registered is never mentioned.** The section is rendered per assembly, against the agent's real tool list, so a profile without `wsl` does not get told to use it — the preferred tool is dropped and the fallback takes the lead. If nothing configured is visible, the section renders empty and disappears from the prompt.
-
-This matters: claiming a tool the agent cannot call produces a confident call to a nonexistent tool, which is worse than saying nothing.
-
-## Verified in a live profile
-
-The rendered section below was read back from a real DSH session's system prompt after a restart — not from a test fixture:
-
-```markdown
-# Shell routing: wsl first
-
-**For every command execution, call `wsl` as the first and default tool.**
-
-| Task | Tool |
-| --- | --- |
-| Any command, build, git, pipeline, script, file listing, search | `wsl` |
-| Windows-native only: registry, services, COM, cmdlets with no Linux equivalent | `pwsh` (last resort) |
-```
-
-Note what is **absent**: the configured `bash` fallback. It has no row because no `bash` tool was registered in that profile, so the router dropped it. A static instruction file cannot do this; it would have named a tool the agent cannot call.
+| 🚀 Saves tokens | One less syntax translation means one less retry |
+| 🐧 Built for WSL | The model writes bash, and it runs Linux-side |
+| 🪟 Keeps the escape hatch | When you really need Windows-native, `pwsh` is still there |
+| 🔧 Configurable | Prefer bash instead, or name only `wsl` — it's a config change |
+| 🩺 Never lies | Only advertises tools that are actually registered |
 
 ## Requirements
 
 | | |
 | --- | --- |
 | **DSH** | `>=0.1.7-rc.2` |
-| **Required service** | `systemPrompt` — present in every standard DSH profile |
-| **Required plugin** | [dsh-wsl-tool](https://github.com/XINY11451/dsh-wsl) — provides the `wsl`, `wsl-path`, `wsl-env` and `wsl-doctor` tools |
-| **WSL** | WSL2, with at least one distribution registered and `wsl.exe` on `PATH` |
-| **Platform** | Any. Windows is the motivating case, but the router itself is platform-independent. |
+| **Required service** | `systemPrompt` — ships with every standard profile |
+| **Required plugin** | [dsh-wsl-tool](https://github.com/XINY11451/dsh-wsl) — provides `wsl` / `wsl-path` / `wsl-env` / `wsl-doctor` |
+| **WSL** | WSL2, at least one registered distribution, `wsl.exe` on `PATH` |
+| **Platform** | Any. Windows is the motivating case; the router itself is platform-independent |
 
-This plugin registers no tools of its own — it only routes between tools other plugins provide. Without `dsh-wsl-tool` there is no `wsl` tool to prefer, and the section renders empty.
+This plugin registers no tools of its own — it only routes between tools other plugins provide. Without `dsh-wsl-tool` there is no `wsl` to prefer, and the section renders empty.
 
 ## Install
 
@@ -89,7 +48,7 @@ This plugin registers no tools of its own — it only routes between tools other
 npm install dsh-wsl-first
 ```
 
-Then add it to the `dsh.profile.bundles` array in your DSH profile's `package.json`:
+Then add it to your profile's `package.json`:
 
 ```json
 {
@@ -101,7 +60,21 @@ Then add it to the `dsh.profile.bundles` array in your DSH profile's `package.js
 }
 ```
 
-The bundle ships its own `cordis.patch.yml`, which inserts the routing row process-wide — every agent preset gets the section without declaring anything. A profile restart is required, because the loader reads its composition at startup.
+The bundle ships its own `cordis.patch.yml`, which inserts the routing row process-wide — every agent preset gets the section without declaring anything. **A profile restart is required**; the loader reads its composition at startup.
+
+If the `wsl` tool itself isn't installed yet, get that first:
+
+```bash
+npm install dsh-wsl-tool
+```
+
+## DSH version compatibility
+
+`package.json` declares `engines.dsh: ">=0.1.7-rc.2"`.
+
+The plugin declares **no `@deepseek-ai/*` peer dependency** and imports none of their values. That's deliberate: at startup DSH runs `evaluatePluginCompatibility` over every profile bundle, and if even one peer range fails to cover the running version, **the whole bundle is skipped** — `cordis.patch.yml` never takes effect, and it looks like "installed but nothing happens". With no peer range to check, that particular failure can't happen here.
+
+If the plugin goes quiet after a DSH major upgrade, check stderr for `skipping profile bundle` and confirm `engines.dsh` still covers your version.
 
 ## Configuration
 
@@ -109,19 +82,17 @@ Every field is optional and settable in a profile patch (`- id: wsl-first-routin
 
 | Field | Default | Environment | Meaning |
 | --- | --- | --- | --- |
-| `preferred` | `wsl` | `DSH_WSL_FIRST_PREFERRED` | The tool to try first. |
-| `alternatives` | `['bash']` | `DSH_WSL_FIRST_ALTERNATIVES` (comma-separated) | Tools tried after the preferred one. |
-| `discouraged` | `['pwsh']` | `DSH_WSL_FIRST_DISCOURAGED` (comma-separated) | Tools pushed to last resort. |
-| `promptPolicy` | `true` | — | Publish the section at all. |
-| `sectionOrder` | `3260` | — | The section's sort order. |
-| `sectionName` | `dsh-wsl-first:shell-routing` | — | The section's stable name. |
-| `extraGuidance` | `''` | — | Extra text appended to the section. |
-| `labels` | built-in | — | `{tool: task description}` rows for the table. |
-| `requirePreferred` | `false` | — | Only publish the section while `preferred` is visible. |
+| `preferred` | `wsl` | `DSH_WSL_FIRST_PREFERRED` | The tool to try first |
+| `alternatives` | `['bash']` | `DSH_WSL_FIRST_ALTERNATIVES` | Tried after the preferred one (comma-separated) |
+| `discouraged` | `['pwsh']` | `DSH_WSL_FIRST_DISCOURAGED` | Pushed to last resort (comma-separated) |
+| `promptPolicy` | `true` | — | Publish the section at all |
+| `sectionOrder` | `3260` | — | The section's sort order |
+| `sectionName` | `dsh-wsl-first:shell-routing` | — | The section's stable name |
+| `extraGuidance` | `''` | — | Extra text appended to the section |
+| `labels` | built-in | — | `{tool: task description}` rows for the table |
+| `requirePreferred` | `false` | — | Only publish while `preferred` is visible |
 
 ### WSL only, nothing else
-
-If you never want another executor named, drop the other tiers:
 
 ```yaml
 - id: wsl-first-routing
@@ -131,25 +102,76 @@ If you never want another executor named, drop the other tiers:
     discouraged: []
 ```
 
-The section then mentions `wsl` alone, and renders empty in any profile where `wsl` is not registered.
+The section then names `wsl` alone, and doesn't appear at all where `wsl` isn't installed.
 
-### Two rules it enforces
+### Prefer bash instead
 
-- **Naming a tool in two tiers is a contradiction.** A tool listed as both an executor and a last resort is a configuration error and throws, rather than letting a silent winner decide.
-- **Repeating `preferred` among `alternatives` is not.** It is redundant, and it happens by default when you point `preferred` at `bash`, so it is dropped instead of failing a reasonable configuration.
+```yaml
+- id: wsl-first-routing
+  config:
+    preferred: bash
+    alternatives: []
+    discouraged: []
+```
 
-## What this plugin deliberately does not do
+`wsl` is only the default — the plugin is a general executor router.
 
-**It does not hide or disable any tool.** The goal is that `wsl` is *chosen* first, not that `pwsh` becomes *unavailable*. Hiding a tool changes what the agent can do; a routing section changes what it reaches for by default while leaving every capability intact.
+### Two configuration rules
 
-If you want the hard form — `pwsh` removed from the tool list entirely — that is your own profile patch:
+A tool that is both an executor and a last resort is a contradiction, and it throws rather than letting a silent winner decide. Repeating `preferred` among `alternatives` is not a contradiction — it's just redundant (it happens naturally when you point `preferred` at `bash`), so it gets de-duplicated.
+
+## The rendered prompt
+
+```markdown
+# Shell routing: wsl first
+
+**For every command execution, call `wsl` as the first and default tool.**
+
+| Task | Tool |
+| --- | --- |
+| Any command, build, git, pipeline, script, file listing, search | `wsl` |
+| Windows-native only: registry, services, COM, cmdlets with no Linux equivalent | `pwsh` (last resort) |
+
+## Rules
+
+- `wsl` is the primary command executor. Reach for it first, every time.
+- Use `pwsh` **only** when the task genuinely requires functionality no other available tool provides — and say why in the same reply.
+- Never use `pwsh` merely because it appears first in a tool list, and never as a fallback when a `wsl` command fails: fix the command and retry there.
+- Do not mix shell syntaxes. A `wsl` call contains the syntax of the shell that tool runs; each executor has its own quoting and path rules.
+- `wsl` paths are Linux paths (`/mnt/c/...`). Windows paths in `command`/`workdir` are translated automatically; pass `translatePaths: false` to hand a native path to a Windows program.
+```
+
+That block is the real output, read back from a live session's system prompt. Note there's **no `bash` row** in it: the profile it came from had no `bash` tool registered, so the router dropped it.
+
+## What it deliberately doesn't do
+
+**It hides nothing and disables nothing.** The point is that `wsl` gets chosen first, not that `pwsh` disappears. Hiding a tool changes what the model can do; a routing section only changes what it reaches for by default.
+
+The hard version — removing `pwsh` from the tool list entirely — is your own profile patch:
 
 ```yaml
 - id: pwsh-sandbox
   disabled: true
 ```
 
-Confirm that entry's real id in your live loader tree before you rely on it; a wrong id fails silently.
+Check that row's real id in your live loader tree before relying on it; a wrong id fails silently.
+
+## Project layout
+
+```
+dsh-wsl-first
+├── index.js          # Host half: registers the systemPrompt section
+├── lib/
+│   ├── config.js     # Config resolution, precedence, validation
+│   └── policy.js     # Tier ordering and prompt rendering
+├── test/
+│   ├── smoke.mjs     # Config and rendering (27 checks)
+│   ├── mount.mjs     # Real apply() mount (8 checks)
+│   └── docs.mjs      # Both READMEs quote the real render (3 checks)
+├── cordis.patch.yml  # Bundle layer: inserts the routing row process-wide
+├── dsh-plugin.json   # Plugin manifest
+└── package.json
+```
 
 ## Tests
 
@@ -157,9 +179,7 @@ Confirm that entry's real id in your live loader tree before you rely on it; a w
 npm test
 ```
 
-`test/smoke.mjs` covers config resolution (precedence, validation, the overlap rules) and rendering (tier ordering, visibility filtering, the no-`undefined`-heading case). `test/mount.mjs` runs the real `apply` from `index.js` against a fake Cordis context and asserts the registered section's name, order and rendered text.
-
-Both modules under test are pure by design — that is why the policy logic lives in `lib/` and not in `index.js`.
+Both modules under `lib/` are pure, so the tests need no DSH host. `mount.mjs` runs the real `apply` from `index.js` against a fake cordis context and asserts the registered section's name, order and rendered text. `docs.mjs` re-renders the section and compares it byte for byte against the block quoted in each README, so the documented output cannot drift from what the code emits.
 
 ## License
 
