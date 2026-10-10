@@ -27,13 +27,12 @@ DSH 在 Windows 上给模型的默认命令工具是 pwsh。这本身没什么�
 
 ## 依赖
 
--| **DSH** | `>=0.1.7-rc.2` |
--| **必需服务** | `systemPrompt`，标准 profile 都自带 |
--| **必需插件** | [dsh-wsl-tool](https://github.com/XINY11451/dsh-wsl)，提供 `wsl` / `wsl-path` / `wsl-env` / `wsl-doctor` |
--| **WSL** | WSL2，至少一个已注册的发行版，`wsl.exe` 在 PATH 上 |
--| **平台** | 推荐 Windows  |
+- | **DSH** | `>=0.1.7-rc.2` |
+- | **必需插件** | [dsh-wsl-tool](https://github.com/XINY11451/dsh-wsl)，提供 `wsl` / `wsl-path` / `wsl-env` / `wsl-doctor` |
+- | **WSL** | WSL2，至少一个已注册的发行版，`wsl.exe` 在 PATH 上 |
+- | **平台** | 推荐 Windows  |
 
-本插件自己不注册任何工具，只在别的插件提供的工具之间做路由。没有 `dsh-wsl-tool` 就没有 `wsl` 可首选，那段提示词会渲染成空。
+>  本插件自己不注册任何工具，只在别的插件提供的工具之间做路由。没有 `dsh-wsl-tool` 就没有 `wsl` 可首选，那段提示词会渲染成空。
 
 ## 安装
 
