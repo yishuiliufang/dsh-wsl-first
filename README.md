@@ -23,7 +23,6 @@ That prompt text only lists tools that are actually registered. If a tool isn't 
 ## Features
 
 | | |
-| --- | --- |
 | 🚀 Saves tokens | One less syntax translation means one less retry |
 | 🐧 Built for WSL | The model writes bash, and it runs Linux-side |
 | 🪟 Keeps the escape hatch | When you really need Windows-native, `pwsh` is still there |
@@ -33,12 +32,11 @@ That prompt text only lists tools that are actually registered. If a tool isn't 
 ## Requirements
 
 | | |
-| --- | --- |
 | **DSH** | `>=0.1.7-rc.2` |
 | **Required service** | `systemPrompt` — ships with every standard profile |
 | **Required plugin** | [dsh-wsl-tool](https://github.com/XINY11451/dsh-wsl) — provides `wsl` / `wsl-path` / `wsl-env` / `wsl-doctor` |
 | **WSL** | WSL2, at least one registered distribution, `wsl.exe` on `PATH` |
-| **Platform** | Any. Windows is the motivating case; the router itself is platform-independent |
+| **Platform** | Recommend Windows First|
 
 This plugin registers no tools of its own — it only routes between tools other plugins provide. Without `dsh-wsl-tool` there is no `wsl` to prefer, and the section renders empty.
 
@@ -142,19 +140,6 @@ A tool that is both an executor and a last resort is a contradiction, and it thr
 ```
 
 That block is the real output, read back from a live session's system prompt. Note there's **no `bash` row** in it: the profile it came from had no `bash` tool registered, so the router dropped it.
-
-## What it deliberately doesn't do
-
-**It hides nothing and disables nothing.** The point is that `wsl` gets chosen first, not that `pwsh` disappears. Hiding a tool changes what the model can do; a routing section only changes what it reaches for by default.
-
-The hard version — removing `pwsh` from the tool list entirely — is your own profile patch:
-
-```yaml
-- id: pwsh-sandbox
-  disabled: true
-```
-
-Check that row's real id in your live loader tree before relying on it; a wrong id fails silently.
 
 ## Project layout
 
