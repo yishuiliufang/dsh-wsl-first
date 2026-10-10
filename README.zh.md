@@ -22,7 +22,6 @@ DSH 在 Windows 上给模型的默认命令工具是 pwsh。这本身没什么�
 
 ## 特性
 
-| | |
 | 🚀 省 token | 少一次语法换算，就少一次重试 |
 | 🐧 对准 WSL | 模型按 bash 来写，直接跑在 Linux 侧 |
 | 🪟 留退路 | 真需要 Windows 原生功能时，pwsh 还在工具表里 |
@@ -31,7 +30,6 @@ DSH 在 Windows 上给模型的默认命令工具是 pwsh。这本身没什么�
 
 ## 依赖
 
-| | |
 | **DSH** | `>=0.1.7-rc.2` |
 | **必需服务** | `systemPrompt`，标准 profile 都自带 |
 | **必需插件** | [dsh-wsl-tool](https://github.com/XINY11451/dsh-wsl)，提供 `wsl` / `wsl-path` / `wsl-env` / `wsl-doctor` |
