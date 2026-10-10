@@ -100,8 +100,8 @@ export function apply(ctx, rawConfig) {
       // the section is filtered against THAT agent's visible tools. The
       // published `AssembleContext` type declares only `scope`/`signal`, but the
       // runtime object carries the agent and the `tools.schemas(scope)` lookup is
-      // designed for it — this is the same contract `dsh-ops` relies on for its
-      // own tooling table.
+      // designed for it — the same contract every tooling plugin relies on when
+      // it needs to name only the tools an agent can really call.
       //
       // Should the field ever be absent, `schemas(undefined)` falls back to the
       // GLOBAL view rather than throwing: process-wide tools such as `wsl` are

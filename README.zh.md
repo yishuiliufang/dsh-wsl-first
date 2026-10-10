@@ -6,15 +6,25 @@
 
 这是一个 [DeepSeek Harness](https://github.com/deepseek-ai) 插件，只做一件事：发布一段带顺序的系统提示词段，告诉模型执行命令时**第一个该调用哪个工具**。装上它不改变任何能力 —— 改变的是模型的**选择**。
 
+## 这个项目适合谁
+
+**如果你不喜欢用 Git for Windows，只想全程用 WSL 跑，那这个项目就是为你做的。**
+
+在 Windows 上，DSH 自带一个 PowerShell 执行器，并把它当作默认。可如果你的真实工具链 —— 编译器、包管理器、shell 脚本、CI 一致性 —— 都在 WSL 里，这个默认就是在跟你作对：每条命令都要付一次语法翻译的代价，路径还得手动转。
+
+本插件把 WSL 变成首选。PowerShell 依然留着，用于真正需要 Windows 原生的任务，但模型不会再自己主动去够它。
+
+**如果上面说的就是你，这就是本项目的全部意义。**
+
 ## 要解决的问题
 
-DSH 跑在 Windows 上时，命令工具往往好几个同时注册着：基座自带的 `pwsh` 一直都在，`wsl` 由另一个插件提供，`dsh-ops` 还可能再装一个自带 bash。**没有任何地方写明偏好**，于是模型自己挑 —— 通常挑它最先学会的 `pwsh`。
+命令工具同时注册好几个时，**哪个会被模型第一个调用，是没人规定的**。基座自带的 `pwsh` 一直都在，`wsl` 由另一个插件提供。**没有任何地方写明偏好**，于是模型自己挑 —— 通常挑它最先学会的 `pwsh`。
 
 这是**路由问题，不是能力问题**。该给的是一条偏好，不是一道禁令。
 
 ## 插件做了什么
 
-它注册一个作用域内的 `systemPrompt` 段，顺序为 **3260** —— 紧跟 `dsh-ops` 在 3250–3252 发布的工具表之后。因此本插件对"先调哪个执行器"有最终发言权，同时不影响其他任何段。
+它注册一个作用域内的 `systemPrompt` 段，顺序为 **3260** —— 排在其他工具类段之后，因此本插件对"先调哪个执行器"有最终发言权，同时不影响其他任何段。
 
 渲染出来的内容：
 
@@ -34,6 +44,8 @@ DSH 跑在 Windows 上时，命令工具往往好几个同时注册着：基座�
 - `wsl` is the primary command executor. Reach for it first, every time.
 - Use `pwsh` **only** when the task genuinely requires functionality no other available tool provides — and say why in the same reply.
 - Never use `pwsh` merely because it appears first in a tool list, and never as a fallback when a `wsl` command fails: fix the command and retry there.
+- Do not mix shell syntaxes. A `wsl` call contains the syntax of the shell that tool runs; each executor has its own quoting and path rules.
+- `wsl` paths are Linux paths (`/mnt/c/...`). Windows paths in `command`/`workdir` are translated automatically; pass `translatePaths: false` to hand a native path to a Windows program.
 ```
 
 ## 只宣传真实存在的工具
@@ -59,6 +71,18 @@ DSH 跑在 Windows 上时，命令工具往往好几个同时注册着：基座�
 
 请注意**缺了什么**：配置里写明的 `bash` 备选**没有出现**。因为那个 profile 里根本没有注册 `bash` 工具，路由器就把它丢掉了。**静态指令文件做不到这一点** —— 它会把一个模型根本调不到的工具写进去。
 
+## 依赖与要求
+
+| | |
+| --- | --- |
+| **DSH 版本** | `>=0.1.7-rc.2` |
+| **必需服务** | `systemPrompt` —— 每个标准 DSH profile 都有 |
+| **必需插件** | [dsh-wsl-tool](https://github.com/XINY11451/dsh-wsl) —— 提供 `wsl`、`wsl-path`、`wsl-env`、`wsl-doctor` 四个工具 |
+| **WSL** | WSL2，至少注册了一个发行版，且 `wsl.exe` 在 `PATH` 上 |
+| **平台** | 任意平台。Windows 是它的动机场景，但路由器本身与平台无关。 |
+
+本插件**自己不注册任何工具** —— 它只在别的插件提供的工具之间做路由。没有 `dsh-wsl-tool` 就没有 `wsl` 工具可供首选，那段提示词会渲染成空。
+
 ## 安装
 
 ```bash
@@ -77,7 +101,7 @@ npm install dsh-wsl-first
 }
 ```
 
-`wsl` 工具本身需要 [dsh-wsl-tool](https://github.com/XINY11451/dsh-wsl)。本插件只做路由，**自己不注册任何工具**。
+bundle 自带 `cordis.patch.yml`，会把这个路由行**进程级**插入 —— 每个 agent preset 都能拿到这段提示词，不需要各自声明。**需要重启 profile**，因为 loader 在启动时读取组合配置。
 
 ## 配置
 
@@ -95,17 +119,19 @@ npm install dsh-wsl-first
 | `labels` | 内置 | — | 表格里 `{工具: 任务描述}`。 |
 | `requirePreferred` | `false` | — | 仅当 `preferred` 可见时才发布该段。 |
 
-### 改成 bash 优先
+### 只要 WSL，其他都不要
+
+如果你不希望提示词里提到任何别的执行器，把其他层级清空：
 
 ```yaml
 - id: wsl-first-routing
   config:
-    preferred: bash
+    preferred: wsl
     alternatives: []
     discouraged: []
 ```
 
-本插件本质是一个通用的执行器路由器，**`wsl` 只是它的默认值**。
+这样这一段**只提 `wsl`**；在没注册 `wsl` 的 profile 里，它干脆渲染成空。
 
 ### 它强制的两条规则
 
@@ -123,7 +149,7 @@ npm install dsh-wsl-first
   disabled: true
 ```
 
-**先在活着的 loader 树里确认那一行的真实 id。** id 写错会静默失效，还可能连带弄坏整棵工具树。
+**依赖它之前，先在活着的 loader 树里确认那一行的真实 id。** id 写错会静默失效。
 
 ## 测试
 
@@ -134,12 +160,6 @@ npm test
 `test/smoke.mjs` 覆盖配置解析（优先级、校验、两条重叠规则）与渲染（层级排序、可见性过滤、标题不出现 `undefined` 的边界）。`test/mount.mjs` 用假的 Cordis context 跑 `index.js` 里**真实的 `apply`**，断言注册出来的段名、顺序与渲染文本。
 
 被测的两个模块都是**纯函数** —— 这正是策略逻辑放在 `lib/` 而不放在 `index.js` 的原因。
-
-## 兼容性
-
-- 需要 DSH `>=0.1.7-rc.2`。
-- 依赖 `systemPrompt` 服务（每个标准 DSH profile 都有）。
-- 与平台无关：Windows 是它的动机场景，但路由器在任何平台都能用。
 
 ## 许可证
 

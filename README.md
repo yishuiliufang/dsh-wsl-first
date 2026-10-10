@@ -6,15 +6,25 @@ Route DSH command execution to **WSL first**.
 
 A [DeepSeek Harness](https://github.com/deepseek-ai) plugin that publishes one ordered system-prompt section naming the command executor the agent should reach for first. Installing it changes no capability — it changes what the agent *chooses*.
 
+## Who this is for
+
+**If you don't like using Git for Windows and would rather run everything through WSL, this plugin is for you.**
+
+On Windows, DSH ships a PowerShell executor and treats it as the default. If your real toolchain — compiler, package manager, shell scripts, CI parity — lives in WSL, that default fights you: every command pays a syntax translation tax, and paths have to be converted by hand.
+
+This plugin makes WSL the first choice. PowerShell stays available for the genuine Windows-native task, but the agent stops reaching for it on its own.
+
+If that describes you, this is the whole point of the project.
+
 ## The problem
 
-When DSH runs on Windows and several command tools are registered at once, which one the model calls first is not obvious. The bundled `pwsh` tool is always present; `wsl` arrives with a separate plugin; `dsh-ops` may add a bundled bash. Nothing states a preference, so the model picks one — often `pwsh`, the tool it learned first.
+When several command tools are registered at once, which one the model calls first is not obvious. The bundled `pwsh` tool is always present; `wsl` arrives with a separate plugin. Nothing states a preference, so the model picks one — often `pwsh`, the tool it learned first.
 
 That is a routing problem, not a capability problem. The fix is a preference, not a restriction.
 
 ## What this plugin does
 
-It registers a scoped `systemPrompt` section, ordered at **3260** — just after `dsh-ops` publishes its own tooling table at 3250–3252, so this plugin has the final say on routing while leaving every other section intact.
+It registers a scoped `systemPrompt` section, ordered at **3260** — after the other tooling sections, so this plugin has the final say on routing while leaving every other section intact.
 
 The rendered section:
 
@@ -61,6 +71,18 @@ The rendered section below was read back from a real DSH session's system prompt
 
 Note what is **absent**: the configured `bash` fallback. It has no row because no `bash` tool was registered in that profile, so the router dropped it. A static instruction file cannot do this; it would have named a tool the agent cannot call.
 
+## Requirements
+
+| | |
+| --- | --- |
+| **DSH** | `>=0.1.7-rc.2` |
+| **Required service** | `systemPrompt` — present in every standard DSH profile |
+| **Required plugin** | [dsh-wsl-tool](https://github.com/XINY11451/dsh-wsl) — provides the `wsl`, `wsl-path`, `wsl-env` and `wsl-doctor` tools |
+| **WSL** | WSL2, with at least one distribution registered and `wsl.exe` on `PATH` |
+| **Platform** | Any. Windows is the motivating case, but the router itself is platform-independent. |
+
+This plugin registers no tools of its own — it only routes between tools other plugins provide. Without `dsh-wsl-tool` there is no `wsl` tool to prefer, and the section renders empty.
+
 ## Install
 
 ```bash
@@ -79,7 +101,7 @@ Then add it to the `dsh.profile.bundles` array in your DSH profile's `package.js
 }
 ```
 
-It needs [dsh-wsl-tool](https://github.com/XINY11451/dsh-wsl) for the `wsl` tool itself. This plugin only routes; it registers no tools of its own.
+The bundle ships its own `cordis.patch.yml`, which inserts the routing row process-wide — every agent preset gets the section without declaring anything. A profile restart is required, because the loader reads its composition at startup.
 
 ## Configuration
 
@@ -97,17 +119,19 @@ Every field is optional and settable in a profile patch (`- id: wsl-first-routin
 | `labels` | built-in | — | `{tool: task description}` rows for the table. |
 | `requirePreferred` | `false` | — | Only publish the section while `preferred` is visible. |
 
-### Prefer bash instead
+### WSL only, nothing else
+
+If you never want another executor named, drop the other tiers:
 
 ```yaml
 - id: wsl-first-routing
   config:
-    preferred: bash
+    preferred: wsl
     alternatives: []
     discouraged: []
 ```
 
-The plugin is a general executor router; `wsl` is only its default.
+The section then mentions `wsl` alone, and renders empty in any profile where `wsl` is not registered.
 
 ### Two rules it enforces
 
@@ -125,7 +149,7 @@ If you want the hard form — `pwsh` removed from the tool list entirely — tha
   disabled: true
 ```
 
-Confirm that entry's real id in your live loader tree first; a wrong id fails silently and takes the tool tree with it.
+Confirm that entry's real id in your live loader tree before you rely on it; a wrong id fails silently.
 
 ## Tests
 
@@ -136,12 +160,6 @@ npm test
 `test/smoke.mjs` covers config resolution (precedence, validation, the overlap rules) and rendering (tier ordering, visibility filtering, the no-`undefined`-heading case). `test/mount.mjs` runs the real `apply` from `index.js` against a fake Cordis context and asserts the registered section's name, order and rendered text.
 
 Both modules under test are pure by design — that is why the policy logic lives in `lib/` and not in `index.js`.
-
-## Compatibility
-
-- Requires DSH `>=0.1.7-rc.2`.
-- Needs the `systemPrompt` service (standard in every DSH profile).
-- Platform-independent: Windows is the motivating case, but the router works anywhere.
 
 ## License
 
