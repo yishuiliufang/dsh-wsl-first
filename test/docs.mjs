@@ -31,7 +31,10 @@ function check(label, body) {
  * @returns {string} the fenced `markdown` block starting at the heading.
  */
 function quotedBlock(file) {
-  const text = readFileSync(file, 'utf8')
+  // Normalize line endings first: a Windows checkout with core.autocrlf=true
+  // writes CRLF, and a comparison that only understands LF would report the
+  // README as broken when the file is fine.
+  const text = readFileSync(file, 'utf8').replace(/\r\n/g, '\n')
   const start = text.indexOf('```markdown\n# Shell routing: wsl first')
   assert.notEqual(start, -1, `${file}: no quoted routing block found`)
   const body = start + '```markdown\n'.length

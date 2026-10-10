@@ -1,0 +1,8 @@
+# Keep every text file LF in the repository, whatever the checkout's
+# core.autocrlf says. The READMEs quote the plugin's rendered output, and both
+# the docs test and the quoted blocks compare against LF — a CRLF checkout must
+# not look like drift.
+* text=auto eol=lf
+
+# PNG and other binaries must never be line-ending converted.
+*.png binary
