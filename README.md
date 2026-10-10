@@ -1,5 +1,7 @@
 # dsh-wsl-first
 
+**English** | [中文](README.zh.md)
+
 Route DSH command execution to **WSL first**.
 
 A [DeepSeek Harness](https://github.com/deepseek-ai) plugin that publishes one ordered system-prompt section naming the command executor the agent should reach for first. Installing it changes no capability — it changes what the agent *chooses*.
@@ -41,6 +43,23 @@ The rendered section:
 **A tool that is not registered is never mentioned.** The section is rendered per assembly, against the agent's real tool list, so a profile without `wsl` does not get told to use it — the preferred tool is dropped and the fallback takes the lead. If nothing configured is visible, the section renders empty and disappears from the prompt.
 
 This matters: claiming a tool the agent cannot call produces a confident call to a nonexistent tool, which is worse than saying nothing.
+
+## Verified in a live profile
+
+The rendered section below was read back from a real DSH session's system prompt after a restart — not from a test fixture:
+
+```markdown
+# Shell routing: wsl first
+
+**For every command execution, call `wsl` as the first and default tool.**
+
+| Task | Tool |
+| --- | --- |
+| Any command, build, git, pipeline, script, file listing, search | `wsl` |
+| Windows-native only: registry, services, COM, cmdlets with no Linux equivalent | `pwsh` (last resort) |
+```
+
+Note what is **absent**: the configured `bash` fallback. It has no row because no `bash` tool was registered in that profile, so the router dropped it. A static instruction file cannot do this; it would have named a tool the agent cannot call.
 
 ## Install
 

@@ -1,5 +1,7 @@
 # dsh-wsl-first
 
+[English](README.md) | **中文**
+
 让 DSH 的命令执行**优先走 WSL**。
 
 这是一个 [DeepSeek Harness](https://github.com/deepseek-ai) 插件，只做一件事：发布一段带顺序的系统提示词段，告诉模型执行命令时**第一个该调用哪个工具**。装上它不改变任何能力 —— 改变的是模型的**选择**。
@@ -39,6 +41,23 @@ DSH 跑在 Windows 上时，命令工具往往好几个同时注册着：基座�
 **没注册的工具，一个字都不会提。** 这一段在每次组装时针对该 agent 的**真实工具表**渲染。所以没装 `wsl` 的配置不会被忽悠去用 wsl —— 首选项会被丢弃，由备选顶上；如果一个配置内的工具都不可见，这一段就渲染成空字符串，从提示词里消失。
 
 这点很重要：让模型去调用一个不存在的工具，只会换来一次自信的失败调用，**比什么都不说更糟**。
+
+## 已在真实 profile 中验证
+
+下面这段是从**一次真实 DSH 会话的系统提示词**里读回来的（重启之后），不是测试夹具：
+
+```markdown
+# Shell routing: wsl first
+
+**For every command execution, call `wsl` as the first and default tool.**
+
+| Task | Tool |
+| --- | --- |
+| Any command, build, git, pipeline, script, file listing, search | `wsl` |
+| Windows-native only: registry, services, COM, cmdlets with no Linux equivalent | `pwsh` (last resort) |
+```
+
+请注意**缺了什么**：配置里写明的 `bash` 备选**没有出现**。因为那个 profile 里根本没有注册 `bash` 工具，路由器就把它丢掉了。**静态指令文件做不到这一点** —— 它会把一个模型根本调不到的工具写进去。
 
 ## 安装
 
