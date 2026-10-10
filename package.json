@@ -1,0 +1,56 @@
+{
+  "name": "dsh-wsl-first",
+  "version": "0.1.0",
+  "description": "Route DSH command execution to WSL first: a configurable system-prompt section that makes the wsl tool the default executor instead of pwsh",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./config": "./lib/config.js",
+    "./policy": "./lib/policy.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "lib",
+    "cordis.patch.yml",
+    "dsh-plugin.json",
+    "README.md",
+    "README.zh.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "test": "node test/smoke.mjs && node test/mount.mjs",
+    "test:smoke": "node test/smoke.mjs",
+    "test:mount": "node test/mount.mjs"
+  },
+  "engines": {
+    "dsh": ">=0.1.7-rc.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yishuiliufang/dsh-wsl-first.git"
+  },
+  "homepage": "https://github.com/yishuiliufang/dsh-wsl-first#readme",
+  "bugs": {
+    "url": "https://github.com/yishuiliufang/dsh-wsl-first/issues"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "wsl",
+    "shell",
+    "routing"
+  ],
+  "license": "MIT"
+}

@@ -1,0 +1,34 @@
+{
+  "$schema": "https://raw.githubusercontent.com/T-Auto/dsh-std/8a15541117cb3c13ddb8f2468308691b6051d162/packages/manifest/schema/dsh-plugin-0.15.schema.json",
+  "manifestVersion": "0.15",
+  "id": "dsh-wsl-first.routing",
+  "name": "dsh-wsl-first",
+  "version": "0.1.0",
+  "license": "MIT",
+  "facets": {
+    "host": {
+      "entry": "index.js",
+      "apiVersion": "v1alpha1"
+    }
+  },
+  "requires": {
+    "contracts": []
+  },
+  "permissions": [],
+  "contributes": {
+    "x-display": [
+      {
+        "title": "dsh-wsl-first",
+        "description": "Routes command execution to WSL first by publishing an ordered system-prompt section. Configurable: prefer wsl, bash, or any registered executor."
+      }
+    ],
+    "x-prompt-sections": [
+      {
+        "name": "dsh-wsl-first:shell-routing",
+        "order": 3260,
+        "summary": "Names the command executor the agent should reach for first; removed while no configured executor is visible."
+      }
+    ]
+  },
+  "subscriptions": []
+}

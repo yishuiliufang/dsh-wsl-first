@@ -1,0 +1,26 @@
+# dsh-wsl-first: route command execution to WSL first.
+#
+# This bundle layer inserts one row process-wide, so every agent preset gets the
+# routing section without declaring anything. The row registers no tools: it
+# publishes a system-prompt section only, which is why installing this plugin
+# changes no capability and only changes what the agent reaches for first.
+#
+# The entry name is PATH-RELATIVE on purpose. DSH anchors a relative `name:` to
+# the directory of the patch file that declared it, so this row always loads
+# this bundle's own `index.js` whatever the package folder is called.
+#
+# To keep the plugin out of one composition, override this row by id in a later
+# patch layer (`- id: wsl-first-routing` with `disabled: true`) instead of
+# adding a duplicate row, which would fail with "already registered".
+
+- insert:
+    - id: wsl-first-routing
+      name: './index.js'
+      config:
+        preferred: wsl
+        alternatives:
+          - bash
+        discouraged:
+          - pwsh
+        promptPolicy: true
+        sectionOrder: 3260
