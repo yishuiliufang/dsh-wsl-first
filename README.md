@@ -22,23 +22,17 @@ That prompt text only lists tools that are actually registered. If a tool isn't 
 
 ## Features
 
-| | |
-| 🚀 Saves tokens | One less syntax translation means one less retry |
-| 🐧 Built for WSL | The model writes bash, and it runs Linux-side |
-| 🪟 Keeps the escape hatch | When you really need Windows-native, `pwsh` is still there |
-| 🔧 Configurable | Prefer bash instead, or name only `wsl` — it's a config change |
-| 🩺 Never lies | Only advertises tools that are actually registered |
+- 🚀 Saves tokens | One less syntax translation means one less retry |
+- 🔧 Configurable | Prefer bash instead, or name only `wsl` — it's a config change , Only advertises tools that are actually registered |
 
 ## Requirements
 
-| | |
-| **DSH** | `>=0.1.7-rc.2` |
-| **Required service** | `systemPrompt` — ships with every standard profile |
-| **Required plugin** | [dsh-wsl-tool](https://github.com/XINY11451/dsh-wsl) — provides `wsl` / `wsl-path` / `wsl-env` / `wsl-doctor` |
-| **WSL** | WSL2, at least one registered distribution, `wsl.exe` on `PATH` |
-| **Platform** | Recommend Windows First|
+- | **DSH** | `>=0.1.7-rc.2` |
+- | **Required plugin** | [dsh-wsl-tool](https://github.com/XINY11451/dsh-wsl) — provides `wsl` / `wsl-path` / `wsl-env` / `wsl-doctor` |
+- | **WSL** | WSL2, at least one registered distribution, `wsl.exe` on `PATH` |
+- | **Platform** | Recommend Windows First|
 
-This plugin registers no tools of its own — it only routes between tools other plugins provide. Without `dsh-wsl-tool` there is no `wsl` to prefer, and the section renders empty.
+>  This plugin registers no tools of its own — it only routes between tools other plugins provide. Without `dsh-wsl-tool` there is no `wsl` to prefer, and the section renders empty.
 
 ## Install
 
@@ -72,7 +66,7 @@ npm install dsh-wsl-tool
 
 The plugin declares **no `@deepseek-ai/*` peer dependency** and imports none of their values. That's deliberate: at startup DSH runs `evaluatePluginCompatibility` over every profile bundle, and if even one peer range fails to cover the running version, **the whole bundle is skipped** — `cordis.patch.yml` never takes effect, and it looks like "installed but nothing happens". With no peer range to check, that particular failure can't happen here.
 
-If the plugin goes quiet after a DSH major upgrade, check stderr for `skipping profile bundle` and confirm `engines.dsh` still covers your version.
+>  If the plugin goes quiet after a DSH major upgrade, check stderr for `skipping profile bundle` and confirm `engines.dsh` still covers your version.
 
 ## Configuration
 
@@ -112,9 +106,9 @@ The section then names `wsl` alone, and doesn't appear at all where `wsl` isn't 
     discouraged: []
 ```
 
-`wsl` is only the default — the plugin is a general executor router.
+>  `wsl` is only the default — the plugin is a general executor router.
 
-### Two configuration rules
+### Configuration rules
 
 A tool that is both an executor and a last resort is a contradiction, and it throws rather than letting a silent winner decide. Repeating `preferred` among `alternatives` is not a contradiction — it's just redundant (it happens naturally when you point `preferred` at `bash`), so it gets de-duplicated.
 
@@ -139,7 +133,7 @@ A tool that is both an executor and a last resort is a contradiction, and it thr
 - `wsl` paths are Linux paths (`/mnt/c/...`). Windows paths in `command`/`workdir` are translated automatically; pass `translatePaths: false` to hand a native path to a Windows program.
 ```
 
-That block is the real output, read back from a live session's system prompt. Note there's **no `bash` row** in it: the profile it came from had no `bash` tool registered, so the router dropped it.
+>  That block is the real output, read back from a live session's system prompt. Note there's **no `bash` row** in it: the profile it came from had no `bash` tool registered, so the router dropped it.
 
 ## Project layout
 
