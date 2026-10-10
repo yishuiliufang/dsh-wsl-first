@@ -23,7 +23,6 @@ DSH 在 Windows 上给模型的默认命令工具是 pwsh。这本身没什么�
 ## 特性
 
 | | |
-| --- | --- |
 | 🚀 省 token | 少一次语法换算，就少一次重试 |
 | 🐧 对准 WSL | 模型按 bash 来写，直接跑在 Linux 侧 |
 | 🪟 留退路 | 真需要 Windows 原生功能时，pwsh 还在工具表里 |
@@ -33,12 +32,11 @@ DSH 在 Windows 上给模型的默认命令工具是 pwsh。这本身没什么�
 ## 依赖
 
 | | |
-| --- | --- |
 | **DSH** | `>=0.1.7-rc.2` |
 | **必需服务** | `systemPrompt`，标准 profile 都自带 |
 | **必需插件** | [dsh-wsl-tool](https://github.com/XINY11451/dsh-wsl)，提供 `wsl` / `wsl-path` / `wsl-env` / `wsl-doctor` |
 | **WSL** | WSL2，至少一个已注册的发行版，`wsl.exe` 在 PATH 上 |
-| **平台** | 任意。Windows 是动机场景，路由器本身与平台无关 |
+| **平台** | 推荐 Windows  |
 
 本插件自己不注册任何工具，只在别的插件提供的工具之间做路由。没有 `dsh-wsl-tool` 就没有 `wsl` 可首选，那段提示词会渲染成空。
 
@@ -142,19 +140,6 @@ npm install dsh-wsl-tool
 ```
 
 上面这份是从真实会话的系统提示词里读回来的。注意里面**没有** `bash` 那一行：在实测的那个 profile 里 `bash` 工具没注册，路由器就把它去掉了。
-
-## 它刻意不做的事
-
-**不隐藏、不禁用任何工具。** 目标是让 `wsl` 被优先选中，而不是让 `pwsh` 消失。隐藏工具改变的是模型能做什么，路由段改变的只是它默认先够哪个。
-
-想要硬版本（把 `pwsh` 整个摘掉）是你自己 profile patch 的事：
-
-```yaml
-- id: pwsh-sandbox
-  disabled: true
-```
-
-改之前先在活着的 loader 树里确认那一行的真实 id，写错会静默失效。
 
 ## 项目结构
 
