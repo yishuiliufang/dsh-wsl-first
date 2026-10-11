@@ -1,9 +1,0 @@
-test: normalize line endings before comparing the quoted prompt
-
-A Windows checkout with core.autocrlf=true writes the READMEs as CRLF, and
-test/docs.mjs searched for LF, so it reported "no quoted routing block found"
-on a file that was perfectly fine. Normalize CRLF to LF before matching.
-
-Adds .gitattributes pinning text files to LF in the repository so a checkout
-cannot silently change what the docs test compares against. Re-verified that
-the test still catches real drift after the change.
