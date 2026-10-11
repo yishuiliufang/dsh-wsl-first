@@ -1,0 +1,161 @@
+# Run the plugin's test suites on every push and pull request.
+#
+# This repository has no dependencies at all — no dependencies, no
+# devDependencies, not even a package-lock.json — so there is nothing to
+# install and nothing to cache. The previous workflow here was GitHub's stock
+# Node template, whose first real step was `npm ci`; that fails outright in a
+# repo with no lockfile, which is why it was replaced rather than restored.
+#
+# The suites are plain Node scripts that import only node:assert/strict,
+# node:fs, node:path and node:url, so they need no test runner either.
+
+name: Test
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 18 is the floor the README documents for the plugin family; 22 and 24
+        # cover current LTS and current stable. Each runs the same three suites.
+        node: ['18', '20', '22', '24']
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      # No `npm ci`: there is no lockfile and no dependency to install.
+      - name: Report the environment
+        run: |
+          node --version
+          npm --version
+          echo "dependencies: $(node -p "Object.keys(require('./package.json').dependencies||{}).length")"
+          echo "devDependencies: $(node -p "Object.keys(require('./package.json').devDependencies||{}).length")"
+
+      - name: Config and rendering suite
+        run: node test/smoke.mjs
+
+      - name: Mount suite
+        run: node test/mount.mjs
+
+      - name: Docs suite
+        run: node test/docs.mjs
+
+      - name: All suites (as npm test runs them)
+        run: npm test
+
+  package:
+    name: Package contents
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # `npm pack --dry-run` is the one check that catches a broken `files`
+      # list before a release does: it prints exactly what would be published.
+      - name: Show what would be published
+        run: npm pack --dry-run
+
+      - name: Assert the tarball carries the plugin and nothing else
+        run: |
+          set -euo pipefail
+          npm pack --dry-run --json > /tmp/pack.json
+          node -e '
+            const fs = require("node:fs")
+            const files = JSON.parse(fs.readFileSync("/tmp/pack.json", "utf8"))[0].files
+              .map(f => f.path).sort()
+            const required = [
+              "LICENSE", "README.md", "README.zh.md",
+              "cordis.patch.yml", "dsh-plugin.json", "index.js",
+              "lib/config.js", "lib/policy.js", "package.json",
+            ]
+            const missing = required.filter(p => !files.includes(p))
+            if (missing.length) {
+              console.error("missing from tarball:", missing)
+              process.exit(1)
+            }
+            const unwanted = files.filter(p =>
+              p.startsWith("test/") || p.startsWith(".git") || p.startsWith(".github"))
+            if (unwanted.length) {
+              console.error("should not be published:", unwanted)
+              process.exit(1)
+            }
+            console.log("tarball contents OK (" + files.length + " files):")
+            for (const f of files) console.log("  " + f)
+          '
+
+  manifest:
+    name: Plugin manifest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # The market listing requires `dsh.bundle` and a patch file beside it.
+      # Checking it here means a broken manifest fails on push, not on review.
+      - name: Assert dsh.bundle and its patch file exist
+        run: |
+          set -euo pipefail
+          node -e '
+            const fs = require("node:fs")
+            const pkg = require("./package.json")
+            const patch = pkg.dsh && pkg.dsh.bundle && pkg.dsh.bundle.patch
+            if (!patch) {
+              console.error("package.json is missing dsh.bundle.patch")
+              process.exit(1)
+            }
+            if (!fs.existsSync(patch)) {
+              console.error("dsh.bundle.patch points at a missing file: " + patch)
+              process.exit(1)
+            }
+            console.log("dsh.bundle.patch -> " + patch + " (exists)")
+          '
+
+      - name: Validate dsh-plugin.json against the published schema
+        run: |
+          set -euo pipefail
+          node -e '
+            const m = require("./dsh-plugin.json")
+            const need = ["$schema", "manifestVersion", "id", "name", "version", "facets"]
+            const missing = need.filter(k => !(k in m))
+            if (missing.length) {
+              console.error("manifest is missing required keys: " + missing.join(", "))
+              process.exit(1)
+            }
+            if (!m.facets.host || !m.facets.host.entry) {
+              console.error("manifest declares no host entry")
+              process.exit(1)
+            }
+            const fs = require("node:fs")
+            if (!fs.existsSync(m.facets.host.entry)) {
+              console.error("facets.host.entry points at a missing file: " + m.facets.host.entry)
+              process.exit(1)
+            }
+            console.log("dsh-plugin.json OK; host entry -> " + m.facets.host.entry)
+          '
