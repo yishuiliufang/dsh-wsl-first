@@ -22,17 +22,25 @@ That prompt text only lists tools that are actually registered. If a tool isn't 
 
 ## Features
 
-- 🚀 Saves tokens | One less syntax translation means one less retry |
-- 🔧 Configurable | Prefer bash instead, or name only `wsl` — it's a config change , Only advertises tools that are actually registered |
+| | |
+| --- | --- |
+| 🚀 Saves tokens | One less syntax translation means one less retry |
+| 🐧 Built for WSL | The model writes bash, and it runs Linux-side |
+| 🪟 Keeps the escape hatch | When you really need Windows-native, `pwsh` is still there |
+| 🔧 Configurable | Prefer bash instead, or name only `wsl` — it's a config change |
+| 🩺 Never lies | Only advertises tools that are actually registered |
 
 ## Requirements
 
-- | **DSH** | `>=0.1.7-rc.2` |
-- | **Required plugin** | [dsh-wsl-tool](https://github.com/XINY11451/dsh-wsl) — provides `wsl` / `wsl-path` / `wsl-env` / `wsl-doctor` |
-- | **WSL** | WSL2, at least one registered distribution, `wsl.exe` on `PATH` |
-- | **Platform** | Recommend Windows First|
+| | |
+| --- | --- |
+| **DSH** | `>=0.1.7-rc.2` |
+| **Required service** | `systemPrompt` — ships with every standard profile |
+| **Required plugin** | [dsh-wsl-tool](https://github.com/XINY11451/dsh-wsl) — provides `wsl` / `wsl-path` / `wsl-env` / `wsl-doctor` |
+| **WSL** | WSL2, at least one registered distribution, `wsl.exe` on `PATH` |
+| **Platform** | Any. Windows is the motivating case; the router itself is platform-independent |
 
->  This plugin registers no tools of its own — it only routes between tools other plugins provide. Without `dsh-wsl-tool` there is no `wsl` to prefer, and the section renders empty.
+This plugin registers no tools of its own — it only routes between tools other plugins provide. Without `dsh-wsl-tool` there is no `wsl` to prefer, and the section renders empty.
 
 ## Install
 
@@ -66,7 +74,26 @@ npm install dsh-wsl-tool
 
 The plugin declares **no `@deepseek-ai/*` peer dependency** and imports none of their values. That's deliberate: at startup DSH runs `evaluatePluginCompatibility` over every profile bundle, and if even one peer range fails to cover the running version, **the whole bundle is skipped** — `cordis.patch.yml` never takes effect, and it looks like "installed but nothing happens". With no peer range to check, that particular failure can't happen here.
 
->  If the plugin goes quiet after a DSH major upgrade, check stderr for `skipping profile bundle` and confirm `engines.dsh` still covers your version.
+If the plugin goes quiet after a DSH major upgrade, check stderr for `skipping profile bundle` and confirm `engines.dsh` still covers your version.
+
+## Known issues
+
+### Toggling the plugin can report an error
+
+Switching this plugin off, or back on, from the plugin manager can fail with one of these:
+
+```
+停用失败: dsh: profile reload requires the root Include entry
+启用失败: dsh: warning: 1 entry did not activate
+```
+
+**This does not affect how the plugin works.** The routing section stays in the system prompt and the plugin keeps running — only the toggle itself does not apply, and no configuration is lost.
+
+**Restart DSH** — close the app and open it again. The change takes effect at startup, and everything works normally afterwards.
+
+The same messages can appear when toggling other plugins in the same profile.
+
+One more thing worth knowing: editing the profile's `cordis.patch.yml` while DSH is running can strip tools from live sessions. Restart after editing that file rather than relying on live reload.
 
 ## Configuration
 
@@ -106,9 +133,9 @@ The section then names `wsl` alone, and doesn't appear at all where `wsl` isn't 
     discouraged: []
 ```
 
->  `wsl` is only the default — the plugin is a general executor router.
+`wsl` is only the default — the plugin is a general executor router.
 
-### Configuration rules
+### Two configuration rules
 
 A tool that is both an executor and a last resort is a contradiction, and it throws rather than letting a silent winner decide. Repeating `preferred` among `alternatives` is not a contradiction — it's just redundant (it happens naturally when you point `preferred` at `bash`), so it gets de-duplicated.
 
@@ -133,7 +160,20 @@ A tool that is both an executor and a last resort is a contradiction, and it thr
 - `wsl` paths are Linux paths (`/mnt/c/...`). Windows paths in `command`/`workdir` are translated automatically; pass `translatePaths: false` to hand a native path to a Windows program.
 ```
 
->  That block is the real output, read back from a live session's system prompt. Note there's **no `bash` row** in it: the profile it came from had no `bash` tool registered, so the router dropped it.
+That block is the real output, read back from a live session's system prompt. Note there's **no `bash` row** in it: the profile it came from had no `bash` tool registered, so the router dropped it.
+
+## What it deliberately doesn't do
+
+**It hides nothing and disables nothing.** The point is that `wsl` gets chosen first, not that `pwsh` disappears. Hiding a tool changes what the model can do; a routing section only changes what it reaches for by default.
+
+The hard version — removing `pwsh` from the tool list entirely — is your own profile patch:
+
+```yaml
+- id: pwsh-sandbox
+  disabled: true
+```
+
+Check that row's real id in your live loader tree before relying on it; a wrong id fails silently.
 
 ## Project layout
 

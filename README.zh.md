@@ -22,17 +22,25 @@ DSH 在 Windows 上给模型的默认命令工具是 pwsh。这本身没什么�
 
 ## 特性
 
-- 🚀 省 token  少一次语法换算，就少一次重试
-- 🐧 对准 WSL  模型按 bash 来写，直接跑在 Linux 侧，真需要 Windows 原生功能时，pwsh 还在工具表里
+| | |
+| --- | --- |
+| 🚀 省 token | 少一次语法换算，就少一次重试 |
+| 🐧 对准 WSL | 模型按 bash 来写，直接跑在 Linux 侧 |
+| 🪟 留退路 | 真需要 Windows 原生功能时，pwsh 还在工具表里 |
+| 🔧 可配置 | 想改成 bash 优先，或者只想提 wsl，改配置就行 |
+| 🩺 不乱说 | 只宣传真实注册的工具，没装的不写 |
 
 ## 依赖
 
-- | **DSH** | `>=0.1.7-rc.2` |
-- | **必需插件** | [dsh-wsl-tool](https://github.com/XINY11451/dsh-wsl)，提供 `wsl` / `wsl-path` / `wsl-env` / `wsl-doctor` |
-- | **WSL** | WSL2，至少一个已注册的发行版，`wsl.exe` 在 PATH 上 |
-- | **平台** | 推荐 Windows  |
+| | |
+| --- | --- |
+| **DSH** | `>=0.1.7-rc.2` |
+| **必需服务** | `systemPrompt`，标准 profile 都自带 |
+| **必需插件** | [dsh-wsl-tool](https://github.com/XINY11451/dsh-wsl)，提供 `wsl` / `wsl-path` / `wsl-env` / `wsl-doctor` |
+| **WSL** | WSL2，至少一个已注册的发行版，`wsl.exe` 在 PATH 上 |
+| **平台** | 任意。Windows 是动机场景，路由器本身与平台无关 |
 
->  本插件自己不注册任何工具，只在别的插件提供的工具之间做路由。没有 `dsh-wsl-tool` 就没有 `wsl` 可首选，那段提示词会渲染成空。
+本插件自己不注册任何工具，只在别的插件提供的工具之间做路由。没有 `dsh-wsl-tool` 就没有 `wsl` 可首选，那段提示词会渲染成空。
 
 ## 安装
 
@@ -66,7 +74,26 @@ npm install dsh-wsl-tool
 
 本插件**没有声明任何 `@deepseek-ai/*` peer dependency**，也不 import 它们的值。这是一条刻意的设计：DSH 启动时会用 `evaluatePluginCompatibility` 逐个校验 profile bundle 的 peer 区间，只要有一个不覆盖当前运行时版本，**整个 bundle 会被跳过**，`cordis.patch.yml` 不生效，表现就是"插件装了但没反应"。本插件没有任何 peer 区间可校验，也就不会因为这种原因被跳过。
 
->  升级 DSH 大版本后如果本插件突然没了动静，先看 stderr 有没有 `skipping profile bundle` 字样，再查 `engines.dsh` 是否还覆盖。
+升级 DSH 大版本后如果本插件突然没了动静，先看 stderr 有没有 `skipping profile bundle` 字样，再查 `engines.dsh` 是否还覆盖。
+
+## 已知问题
+
+### 在插件管理器里切换开关可能报错
+
+在插件管理器里关闭（或重新开启）本插件时，可能弹出下面其中之一：
+
+```
+停用失败: dsh: profile reload requires the root Include entry
+启用失败: dsh: warning: 1 entry did not activate
+```
+
+**这不影响插件正常工作。** 路由段仍在系统提示词里，插件照常运行 —— 只是这一次的开关没有生效，配置也不会丢失。
+
+**重启 DSH** 即可：关掉应用再打开。改动会在启动时生效，之后一切正常。
+
+在同一个 profile 里切换其他插件时，也可能出现同样的提示。
+
+另外值得留意：DSH 运行期间编辑 profile 的 `cordis.patch.yml`，可能会让正在进行的会话丢失部分工具。改完这个文件请重启，不要依赖热重载。
 
 ## 配置
 
@@ -108,7 +135,7 @@ npm install dsh-wsl-tool
 
 `wsl` 只是默认值，这插件本质是个通用的执行器路由器。
 
-### 配置规则
+### 两条配置规则
 
 同一个工具既当执行器又当"最后手段"是矛盾，会直接报错，不让某个静默的胜者决定。而 `preferred` 在 `alternatives` 里重复出现不算矛盾，那只是冗余（把 `preferred` 指到 `bash` 时会自然发生），直接去重。
 
@@ -133,7 +160,20 @@ npm install dsh-wsl-tool
 - `wsl` paths are Linux paths (`/mnt/c/...`). Windows paths in `command`/`workdir` are translated automatically; pass `translatePaths: false` to hand a native path to a Windows program.
 ```
 
->  上面这份是从真实会话的系统提示词里读回来的。注意里面**没有** `bash` 那一行：在实测的那个 profile 里 `bash` 工具没注册，路由器就把它去掉了。
+上面这份是从真实会话的系统提示词里读回来的。注意里面**没有** `bash` 那一行：在实测的那个 profile 里 `bash` 工具没注册，路由器就把它去掉了。
+
+## 它刻意不做的事
+
+**不隐藏、不禁用任何工具。** 目标是让 `wsl` 被优先选中，而不是让 `pwsh` 消失。隐藏工具改变的是模型能做什么，路由段改变的只是它默认先够哪个。
+
+想要硬版本（把 `pwsh` 整个摘掉）是你自己 profile patch 的事：
+
+```yaml
+- id: pwsh-sandbox
+  disabled: true
+```
+
+改之前先在活着的 loader 树里确认那一行的真实 id，写错会静默失效。
 
 ## 项目结构
 
@@ -158,7 +198,7 @@ dsh-wsl-first
 npm test
 ```
 
->  `lib/` 下两个模块都是纯函数，所以测试不需要 DSH 宿主。`mount.mjs` 用假的 cordis context 跑 `index.js` 里真实的 `apply`，断言注册出的段名、顺序和渲染文本。`docs.mjs` 重新渲染一次，逐字节比对两份 README 里引用的那段，所以文档里的输出不可能和代码实际产出脱节。
+`lib/` 下两个模块都是纯函数，所以测试不需要 DSH 宿主。`mount.mjs` 用假的 cordis context 跑 `index.js` 里真实的 `apply`，断言注册出的段名、顺序和渲染文本。`docs.mjs` 重新渲染一次，逐字节比对两份 README 里引用的那段，所以文档里的输出不可能和代码实际产出脱节。
 
 ## 许可证
 
