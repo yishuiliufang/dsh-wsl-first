@@ -198,17 +198,24 @@ npm install dsh-wsl-tool
 ```
 dsh-wsl-first
 ├── index.js          # Host 端插件：注册 systemPrompt 段
+├── endpoint.js       # Client 端：侧栏入口与面板
 ├── lib/
 │   ├── config.js     # 配置解析、优先级、校验
 │   └── policy.js     # 层级排序与提示词渲染
 ├── test/
 │   ├── smoke.mjs     # 配置与渲染（27 项）
 │   ├── mount.mjs     # 真实 apply() 挂载（8 项）
-│   └── docs.mjs      # 断言两份 README 引用的是真实渲染（3 项）
+│   ├── docs.mjs      # 断言两份 README 引用的是真实渲染（3 项）
+│   └── panel.mjs     # 客户端挂载：注册与渲染（15 项）
 ├── cordis.patch.yml  # bundle 层：进程级插入路由行
 ├── dsh-plugin.json   # 插件清单
+├── CHANGELOG.md      # 更新说明
 └── package.json
 ```
+
+## 更新说明
+
+每个版本改了什么见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 测试
 

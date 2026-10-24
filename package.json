@@ -1,6 +1,6 @@
 {
   "name": "dsh-wsl-first",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Route DSH command execution to WSL first: a configurable system-prompt section that makes the wsl tool the default executor instead of pwsh",
   "type": "module",
   "main": "index.js",
@@ -14,6 +14,7 @@
   },
   "files": [
     "index.js",
+    "CHANGELOG.md",
     "endpoint.js",
     "lib",
     "cordis.patch.yml",

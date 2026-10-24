@@ -198,17 +198,24 @@ Check that row's real id in your live loader tree before relying on it; a wrong 
 ```
 dsh-wsl-first
 ├── index.js          # Host half: registers the systemPrompt section
+├── endpoint.js       # Client half: the sidebar panel and its rail entry
 ├── lib/
 │   ├── config.js     # Config resolution, precedence, validation
 │   └── policy.js     # Tier ordering and prompt rendering
 ├── test/
 │   ├── smoke.mjs     # Config and rendering (27 checks)
 │   ├── mount.mjs     # Real apply() mount (8 checks)
-│   └── docs.mjs      # Both READMEs quote the real render (3 checks)
+│   ├── docs.mjs      # Both READMEs quote the real render (3 checks)
+│   └── panel.mjs     # Client mount: registration and rendering (15 checks)
 ├── cordis.patch.yml  # Bundle layer: inserts the routing row process-wide
 ├── dsh-plugin.json   # Plugin manifest
+├── CHANGELOG.md      # Release notes
 └── package.json
 ```
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for what changed in each release.
 
 ## Tests
 
