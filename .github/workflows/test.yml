@@ -87,7 +87,7 @@ jobs:
               .map(f => f.path).sort()
             const required = [
               "LICENSE", "README.md", "README.zh.md",
-              "cordis.patch.yml", "dsh-plugin.json", "index.js",
+              "cordis.patch.yml", "dsh-plugin.json", "endpoint.js", "index.js",
               "lib/config.js", "lib/policy.js", "package.json",
             ]
             const missing = required.filter(p => !files.includes(p))
