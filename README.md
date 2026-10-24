@@ -29,6 +29,24 @@ That prompt text only lists tools that are actually registered. If a tool isn't 
 | 🪟 Keeps the escape hatch | When you really need Windows-native, `pwsh` is still there |
 | 🔧 Configurable | Prefer bash instead, or name only `wsl` — it's a config change |
 | 🩺 Never lies | Only advertises tools that are actually registered |
+| 🖥 Sidebar panel | A rail entry showing the current first choice, the fallbacks, and whether the section is publishing |
+
+## Sidebar panel
+
+The plugin contributes one rail entry (a glyph plus the `WSL first` label). It opens a read-only panel showing the routing in force:
+
+| Panel row | Meaning |
+| --- | --- |
+| Reach for first | The preferred executor (`preferred`) |
+| Fall back to | The alternatives (`alternatives`, minus any duplicate of the preferred) |
+| Last resort | What is explicitly discouraged (`discouraged`) |
+| Prompt section | Whether the section publishes, and its `order` |
+
+The panel is read-only by design: the routing belongs to the bundle row in `cordis.patch.yml`, and a form here would give one setting two owners that can disagree. Change the file and restart the profile.
+
+It reads the row's own override first and the inherited bundle default second — the same precedence the Host applies to that row.
+
+> **The first enable needs a DSH restart.** The Host caches its client-package verdict per Loader specifier. If a profile ever resolved a build of this package *without* a client half before resolving one with it, that negative verdict is cached too, and nothing short of a restart re-evaluates it — not a reinstall, a page refresh, or HMR. After that restart, later client-artifact edits are picked up by HMR normally.
 
 ## Requirements
 
